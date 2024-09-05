@@ -1,6 +1,6 @@
 "use server";
 
-import { eq, or, like } from "drizzle-orm";
+import { eq, or, like, SQL } from "drizzle-orm";
 import { db } from "../db";
 import { InsertListing, SelectListing, listingTable } from "../schema";
 
@@ -30,19 +30,22 @@ export const getListingById = async (id: string) => {
 };
 
 export const getAllListings = async (search?: string): Promise<SelectListing[]> => {
-  let query = db.select().from(listingTable);
+  let whereClause: SQL | undefined;
 
   if (search) {
-    query = query.where(
-      or(
-        like(listingTable.title, `%${search}%`),
-        like(listingTable.description, `%${search}%`),
-        like(listingTable.location, `%${search}%`)
-      )
+    whereClause = or(
+      like(listingTable.title, `%${search}%`),
+      like(listingTable.description, `%${search}%`),
+      like(listingTable.location, `%${search}%`)
     );
   }
 
-  const results = await query;
+  const results = await db
+    .select()
+    .from(listingTable)
+    .where(whereClause)
+    .execute();
+
   return results;
 };
 
